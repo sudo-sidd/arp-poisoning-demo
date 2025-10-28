@@ -1,0 +1,12 @@
+# ARP Spoofing Simulation - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core visualization library
+matplotlib>=3.5.0
+
+# Optional: Enhanced plots (uncomment if needed)
+# numpy>=1.21.0
+# pandas>=1.3.0
+
+# Optional: For extended features (uncomment if using arp_sim_extended.py)
+# colorama>=0.4.4
