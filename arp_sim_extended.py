@@ -200,25 +200,60 @@ ax_log.axis('off')
 
 plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
 
-# positions
+# positions - triangle layout for better MITM visualization
 pos = {
     "victim": (2, 3),
-    "gateway": (8, 4),
-    "spoofer": (8, 1.5)
+    "gateway": (8, 3),
+    "spoofer": (5, 0.8)
 }
 
 # draw nodes
 node_patches = {}
+node_labels = {}
 for k, p in pos.items():
-    circ = patches.Circle(p, 0.6, ec='black', lw=1.5, facecolor='#ddd')
+    circ = patches.Circle(p, 0.6, ec='black', lw=2, facecolor='#ddd')
     ax_main.add_patch(circ)
     node_patches[k] = circ
-    ax_main.text(p[0], p[1]-1.0, k.capitalize(), ha='center', fontsize=10, weight='bold')
+    label = ax_main.text(p[0], p[1]-1.0, k.capitalize(), ha='center', fontsize=10, weight='bold')
+    node_labels[k] = label
 
-# flow line
-flow_line, = ax_main.plot([pos['victim'][0], pos['gateway'][0]], 
-                          [pos['victim'][1], pos['gateway'][1]],
-                          lw=8, solid_capstyle='round', color='gray', alpha=0.6)
+# Create multiple connection lines for different states
+# Direct connection (victim -> gateway) - used when legitimate
+direct_line, = ax_main.plot([pos['victim'][0], pos['gateway'][0]], 
+                            [pos['victim'][1], pos['gateway'][1]],
+                            lw=6, solid_capstyle='round', color='green', alpha=0, 
+                            linestyle='-', zorder=1)
+
+# MITM path (victim -> spoofer -> gateway) - used when poisoned
+mitm_line1, = ax_main.plot([pos['victim'][0], pos['spoofer'][0]], 
+                           [pos['victim'][1], pos['spoofer'][1]],
+                           lw=6, solid_capstyle='round', color='red', alpha=0,
+                           linestyle='-', zorder=2)
+
+mitm_line2, = ax_main.plot([pos['spoofer'][0], pos['gateway'][0]], 
+                           [pos['spoofer'][1], pos['gateway'][1]],
+                           lw=6, solid_capstyle='round', color='orange', alpha=0,
+                           linestyle='--', zorder=2)
+
+# Network connection lines (physical layer - always visible but dimmed)
+network_line1, = ax_main.plot([pos['victim'][0], pos['spoofer'][0]], 
+                              [pos['victim'][1], pos['spoofer'][1]],
+                              lw=1, color='lightgray', alpha=0.3, linestyle=':', zorder=0)
+
+network_line2, = ax_main.plot([pos['spoofer'][0], pos['gateway'][0]], 
+                              [pos['spoofer'][1], pos['gateway'][1]],
+                              lw=1, color='lightgray', alpha=0.3, linestyle=':', zorder=0)
+
+network_line3, = ax_main.plot([pos['victim'][0], pos['gateway'][0]], 
+                              [pos['victim'][1], pos['gateway'][1]],
+                              lw=1, color='lightgray', alpha=0.3, linestyle=':', zorder=0)
+
+# Add animated packet indicators
+packet_dot, = ax_main.plot([], [], 'o', markersize=15, color='cyan', alpha=0, zorder=5)
+
+# Add status indicator at spoofer
+spoofer_status = ax_main.text(pos['spoofer'][0], pos['spoofer'][1] + 0.8, "", 
+                              ha='center', fontsize=9, weight='bold', color='red')
 
 # Alert indicator
 alert_circle = patches.Circle((5, 5), 0.3, ec='red', lw=3, facecolor='none', visible=False)
@@ -243,7 +278,7 @@ log_text = ax_log.text(0.05, 0.95, "", transform=ax_log.transAxes, va='top', fon
                       family='monospace', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5'))
 
 # Instructions
-ax_main.text(0.5, 0.02, "Keys: r=restore | s=static ARP | d=detection | a=auto-defend | e=export log | l=start/stop logging | q=quit", 
+ax_main.text(0.5, 0.02, "Keys: r=restore | w=static ARP | d=detection | a=auto-defend | e=export log | l=start/stop logging | q=quit", 
             transform=ax_main.transAxes, ha='center', fontsize=9, 
             bbox=dict(facecolor='lightblue', alpha=0.7, boxstyle='round,pad=0.3'))
 
@@ -273,7 +308,6 @@ def update_frame(frame):
     # Update visuals
     node_patches['victim'].set_facecolor('#bfefff' if not static_arp_enabled else '#c7f5c7')
     node_patches['gateway'].set_facecolor('#d1ffd1')
-    node_patches['spoofer'].set_facecolor('#ffd1d1')
     
     # Alert animation
     if alert_active:
@@ -286,16 +320,62 @@ def update_frame(frame):
         alert_circle.set_visible(False)
         alert_text.set_visible(False)
     
-    # Flow line color
+    # Update connection visualization based on state
     if flow_state == "unknown":
-        flow_line.set_color('gray')
-        flow_line.set_alpha(0.4)
+        # No ARP mapping yet - all lines invisible
+        direct_line.set_alpha(0)
+        mitm_line1.set_alpha(0)
+        mitm_line2.set_alpha(0)
+        node_patches['spoofer'].set_facecolor('#ddd')
+        node_patches['spoofer'].set_edgecolor('gray')
+        spoofer_status.set_text("")
+        packet_dot.set_alpha(0)
+        
     elif flow_state == "ok":
-        flow_line.set_color('green')
-        flow_line.set_alpha(0.9)
-    else:
-        flow_line.set_color('red')
-        flow_line.set_alpha(0.9)
+        # Legitimate connection - direct line visible
+        direct_line.set_alpha(0.9)
+        direct_line.set_color('limegreen')
+        mitm_line1.set_alpha(0)
+        mitm_line2.set_alpha(0)
+        node_patches['spoofer'].set_facecolor('#ffd1d1')
+        node_patches['spoofer'].set_edgecolor('gray')
+        node_patches['spoofer'].set_linewidth(2)
+        spoofer_status.set_text("🔴 IDLE")
+        spoofer_status.set_color('gray')
+        packet_dot.set_alpha(0)
+        
+    else:  # poisoned
+        # MITM active - show routing through spoofer
+        direct_line.set_alpha(0.2)
+        direct_line.set_color('gray')
+        mitm_line1.set_alpha(0.95)
+        mitm_line1.set_color('#ff3333')
+        mitm_line2.set_alpha(0.8)
+        mitm_line2.set_color('#ff9933')
+        node_patches['spoofer'].set_facecolor('#ff6666')
+        node_patches['spoofer'].set_edgecolor('darkred')
+        node_patches['spoofer'].set_linewidth(4)
+        spoofer_status.set_text("⚠️ MITM ACTIVE" if not detection_enabled else "⚠️ DETECTED!")
+        spoofer_status.set_color('darkred' if not detection_enabled else 'red')
+        
+        # Animate packet flow through MITM path
+        t = time.time() % 2  # 2 second cycle
+        if t < 1:
+            # Packet from victim to spoofer
+            progress = t
+            px = pos['victim'][0] + (pos['spoofer'][0] - pos['victim'][0]) * progress
+            py = pos['victim'][1] + (pos['spoofer'][1] - pos['victim'][1]) * progress
+            packet_dot.set_data([px], [py])
+            packet_dot.set_alpha(0.8)
+            packet_dot.set_color('yellow')
+        else:
+            # Packet from spoofer to gateway
+            progress = t - 1
+            px = pos['spoofer'][0] + (pos['gateway'][0] - pos['spoofer'][0]) * progress
+            py = pos['spoofer'][1] + (pos['gateway'][1] - pos['spoofer'][1]) * progress
+            packet_dot.set_data([px], [py])
+            packet_dot.set_alpha(0.6)
+            packet_dot.set_color('orange')
     
     # Update ARP cache display
     s = "📋 Victim ARP Cache:\n"
@@ -340,7 +420,7 @@ def on_key(event):
         send_arp_reply(gateway, gateway['ip'], gateway['mac'])
         stats["restorations"] += 1
     
-    elif event.key == 's':
+    elif event.key == 'w':
         static_arp_enabled = not static_arp_enabled
         log(f"🔒 Static ARP: {static_arp_enabled}", "ACTION")
         if static_arp_enabled:

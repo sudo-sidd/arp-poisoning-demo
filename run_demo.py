@@ -52,7 +52,7 @@ def run_basic_sim():
     print("🚀 Starting Basic ARP Simulation...\n")
     print("Instructions:")
     print("  • Press 'r' to send gratuitous ARP (restore correct mapping)")
-    print("  • Press 's' to toggle static ARP (defense)")
+    print("  • Press 'w' to toggle static ARP (defense)")
     print("  • Press 'q' to quit")
     print("\nWatch for:")
     print("  • Gray line = No ARP mapping")
@@ -137,7 +137,7 @@ def run_guided_tutorial():
     print("  Phase 2 (3-6s): Green line - Legitimate ARP exchange")
     print("  Phase 3 (6+s): Red line - Attack! Cache is poisoned")
     print("\nTry pressing 'r' to restore (but watch it get re-poisoned)")
-    print("Then press 's' to enable static ARP (immune to attacks)")
+    print("Then press 'w' to enable static ARP (immune to attacks)")
     
     input("\n▶ Press Enter to launch...")
     run_basic_sim()
@@ -149,18 +149,14 @@ def view_docs():
     print("="*60)
     print("\nAvailable documents:")
     print("  1. README.md - Quick start and overview")
-    print("  2. DEMO_GUIDE.md - Step-by-step walkthroughs")
-    print("  3. THEORY.md - Deep dive into ARP protocol")
-    print("  4. SETUP.md - Installation instructions")
+    print("  2. THEORY.md - Deep dive into ARP protocol")
     print("  0. Back to main menu")
     
     choice = input("\n▶ Select document (0-4): ").strip()
     
     doc_files = {
         '1': 'README.md',
-        '2': 'DEMO_GUIDE.md',
-        '3': 'THEORY.md',
-        '4': 'SETUP.md'
+        '2': 'THEORY.md'
     }
     
     if choice in doc_files:

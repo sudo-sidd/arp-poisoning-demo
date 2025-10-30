@@ -863,7 +863,8 @@ Minimize: $Cost = C_{FP} \cdot FPR + C_{FN} \cdot FNR$
 
 **Next Steps**:
 - Run the simulation: [README.md](./README.md)
-- Try the demos: [DEMO_GUIDE.md](./DEMO_GUIDE.md)
+- Run the simulation: [README.md](./README.md)
+- Try the demos: See the "Demo Script" section in `README.md` (DEMO_GUIDE.md was consolidated)
 - Build extensions: [arp_sim_extended.py](./arp_sim_extended.py)
 
 ---
