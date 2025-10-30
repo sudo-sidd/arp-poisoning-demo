@@ -14,8 +14,8 @@ A **safe, educational simulation** of ARP spoofing attacks and defenses. No root
 <!-- Side-by-side scaled screenshots: use the table below so the images render next to each other and can be resized via the width attribute -->
 <table>
 	<tr>
-		<td><img src="assets/sim-1.png" alt="Basic simulation screenshot" width="50%" /></td>
-		<td><img src="assets/sim-2.png" alt="Extended simulation screenshot" width="50%" /></td>
+		<td><img src="assets/sim-1.png" alt="Basic simulation screenshot" hieght="100" width="95%" /></td>
+		<td><img src="assets/sim-2.png" alt="Extended simulation screenshot" width="95%" /></td>
 	</tr>
 </table>
 
